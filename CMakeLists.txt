@@ -29,6 +29,9 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS NO)
+
 
 include_directories(
     # gameanalytics includes
@@ -104,7 +107,32 @@ else()
     message(STATUS "Using user-specified PLATFORM: ${PLATFORM}")
 endif()
 
-# --------------------------- END --------------------------- #
+# --------------------------- Detect Architecture Automatically --------------------------- #
+
+# Print the system architecture
+message(STATUS "System architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+
+if(${PLATFORM} STREQUAL "osx")
+    # Set archs to be build for osx to both x86_64 and arm64
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
+
+    if(DEFINED CMAKE_OSX_ARCHITECTURES)
+        message(STATUS "Target architectures (CMAKE_OSX_ARCHITECTURES): ${CMAKE_OSX_ARCHITECTURES}")
+    else()
+        message(STATUS "CMAKE_OSX_ARCHITECTURES is not defined.")
+    endif()
+else()
+    # Detect if it's 32-bit or 64-bit for other systems based on the pointer size
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        message(STATUS "Target is 64-bit")
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        message(STATUS "Target is 32-bit")
+    else()
+        message(WARNING "Unknown architecture")
+    endif()
+endif()
+
+# --------------------------- Settings --------------------------- #
 
 if(${GA_USE_PACKAGE})
 

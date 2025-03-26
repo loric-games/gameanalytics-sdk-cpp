@@ -61,9 +61,14 @@ namespace gameanalytics
             getInstance().cacheIdentifier();
         }
 
-        std::string GAState::getIdentifier()
+        std::string GAState::getUserId()
         {
             return getInstance()._identifier;
+        }
+
+        std::string GAState::getExternalUserId()
+        {
+            return getInstance()._externalUserId;
         }
 
         bool GAState::isInitialized()
@@ -402,7 +407,7 @@ namespace gameanalytics
                 out["event_uuid"] = utilities::GAUtilities::generateUUID();
                 
                 // User identifier
-                out["user_id"] = getInstance().getIdentifier();
+                out["user_id"] = getUserId();
                 
                 // remote configs configurations
                 if(getInstance()._configurations.is_object() && !getInstance()._configurations.empty())

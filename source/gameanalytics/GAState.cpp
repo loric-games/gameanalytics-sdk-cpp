@@ -57,7 +57,7 @@ namespace gameanalytics
                 return;
             }
 
-            getInstance()._userId = id;
+            getInstance()._customUserId = id;
             getInstance().cacheIdentifier();
         }
 
@@ -383,6 +383,7 @@ namespace gameanalytics
                 logging::GALogger::i("Ending session.");
                 if (GAState::isEnabled() && GAState::sessionIsStarted())
                 {
+                    getInstance().updateTotalSessionTime();
                     events::GAEvents::addHealthEvent();
                     events::GAEvents::addSessionEndEvent();
                     getInstance()._sessionStart = 0;
@@ -410,9 +411,9 @@ namespace gameanalytics
                 out["user_id"] = getUserId();
                 
                 // remote configs configurations
-                if(getInstance()._configurations.is_object() && !getInstance()._configurations.empty())
+                if(getInstance()._trackingRemoteConfigsJson.is_array() && !getInstance()._trackingRemoteConfigsJson.empty())
                 {
-                    out["configurations"] = getInstance()._configurations;
+                    out["configurations_v3"] = getInstance().getRemoteConfigAnnotations();
                 }
 
                 out["sdk_version"] = device::GADevice::getRelevantSdkVersion();
@@ -505,9 +506,9 @@ namespace gameanalytics
 
         void GAState::cacheIdentifier()
         {
-            if(!_userId.empty())
+            if(!_customUserId.empty())
             {
-                _identifier = _userId;
+                _identifier = _customUserId;
             }
             else
             {
@@ -515,7 +516,6 @@ namespace gameanalytics
             }
 
             logging::GALogger::d("identifier, {clean:%s}", _identifier.c_str());
-        
         }
 
         std::string setStateFromCache(json& dict, std::string const& key, std::string const& value)
@@ -533,6 +533,11 @@ namespace gameanalytics
             }
 
             return "";
+        }
+
+        int64_t GAState::getTotalSessionLength() const
+        {
+            return _totalElapsedSessionTime + calculateSessionLength<std::chrono::seconds>();
         }
 
         void GAState::ensurePersistedStates()
@@ -555,6 +560,9 @@ namespace gameanalytics
                         }
                     }
                 }
+                
+                std::string s = state_dict.dump();
+                _gaLogger.d("state_dict: %s", s.c_str());
 
                 // insert into GAState instance
                 std::string defaultId = utilities::getOptionalValue<std::string>(state_dict, "default_user_id");
@@ -575,6 +583,20 @@ namespace gameanalytics
                 _currentCustomDimension01 = setStateFromCache(state_dict, "dimension01", _currentCustomDimension01);
                 _currentCustomDimension02 = setStateFromCache(state_dict, "dimension02", _currentCustomDimension02);
                 _currentCustomDimension03 = setStateFromCache(state_dict, "dimension03", _currentCustomDimension03);
+                
+                try
+                {
+                    std::string cachedSessionTime = utilities::getOptionalValue<std::string>(state_dict, "total_session_time", "0");
+                    
+                    _totalElapsedSessionTime = std::stoull(cachedSessionTime);
+
+                }
+                catch(const std::exception& e)
+                {
+                    _gaLogger.w("Failed to read total_session_time from cache!");
+                    _totalElapsedSessionTime = 0;
+                }
+                
 
                 // get cached init call values
                 if (state_dict.contains("sdk_config_cached") && state_dict["sdk_config_cached"].is_string())
@@ -843,22 +865,9 @@ namespace gameanalytics
             return getInstance()._sessionStart != 0;
         }
 
-        std::string GAState::getRemoteConfigsStringValue(std::string const& key, std::string const& defaultValue)
-        {
-            std::lock_guard<std::recursive_mutex> lg(getInstance()._mtx);
-            std::string const value = utilities::getOptionalValue(getInstance()._configurations, key, defaultValue);
-
-            return value;
-        }
-
         bool GAState::isRemoteConfigsReady()
         {
             return getInstance()._remoteConfigsIsReady;
-        }
-
-        int64_t GAState::calculateSessionLength() const
-        {
-            return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - _startTimepoint).count();
         }
 
         void GAState::addRemoteConfigsListener(const std::shared_ptr<IRemoteConfigsListener>& listener)
@@ -883,12 +892,52 @@ namespace gameanalytics
         std::string GAState::getRemoteConfigsContentAsString()
         {
             std::lock_guard<std::recursive_mutex> lg(getInstance()._mtx);
-            return getInstance()._configurations.dump(JSON_PRINT_INDENT);
+
+            json contents;
+
+            for(auto& obj : getInstance()._gameRemoteConfigsJson)
+            {
+                if(obj.contains("key") && obj.contains("value"))
+                {
+                    std::string key = utilities::getOptionalValue<std::string>(obj, "key", "");
+                    if(!key.empty())
+                    {
+                        contents[key] = obj["value"];
+                    }
+                }
+            }
+
+            return contents.dump(JSON_PRINT_INDENT);
+        }
+
+        void GAState::buildRemoteConfigsJsons(const json& remoteCfgs)
+        {
+            _gameRemoteConfigsJson = json::array();
+            _trackingRemoteConfigsJson = json::array();
+
+            for (const auto& configuration : remoteCfgs)
+            {
+                _gameRemoteConfigsJson.push_back({
+                        {"key", configuration["key"]},
+                        {"value", configuration["value"]}
+                });
+
+                _trackingRemoteConfigsJson.push_back({
+                    {"key", configuration["key"]},
+                    {"id", configuration["id"]},
+                    {"vsn", configuration["vsn"]}
+                });
+            }
+
+            logging::GALogger::d("Remote configs: %s", _gameRemoteConfigsJson.dump(JSON_PRINT_INDENT).c_str());
+            logging::GALogger::d("Remote configs for tracking: %s", _trackingRemoteConfigsJson.dump(JSON_PRINT_INDENT).c_str());
+            logging::GALogger::i("Remote configs ready with %zu configurations", _gameRemoteConfigsJson.size());
         }
 
         void GAState::populateConfigurations(json& sdkConfig)
         {
-            std::lock_guard<std::recursive_mutex> guard(_mtx);
+    
+            json _tempRemoteConfigsJson = {};
 
             try
             {
@@ -901,29 +950,25 @@ namespace gameanalytics
                         if (!configuration.empty())
                         {
                             std::string key = utilities::getOptionalValue<std::string>(configuration, "key", "");
-
                             int64_t start_ts = utilities::getOptionalValue<int64_t>(configuration, "start_ts", std::numeric_limits<int64_t>::min());
-
                             int64_t end_ts  = utilities::getOptionalValue<int64_t>(configuration, "end_ts", std::numeric_limits<int64_t>::max());
 
                             int64_t client_ts_adjusted = getClientTsAdjusted();
 
                             if (!key.empty() && configuration.contains("value") && client_ts_adjusted > start_ts && client_ts_adjusted < end_ts)
                             {
-                                json& value = configuration["value"];
-                                if (value.is_string() || value.is_number())
-                                {
-                                    _configurations[key] = value;
-                                    logging::GALogger::d("configuration added: %s", configuration.dump(JSON_PRINT_INDENT).c_str());
-                                }
+                                _tempRemoteConfigsJson[key] = configuration;
+                                logging::GALogger::d("configuration added: %s", configuration.dump(JSON_PRINT_INDENT).c_str());
                             }
                         }
                     }
                 }
 
+                buildRemoteConfigsJsons(_tempRemoteConfigsJson);
+
                 _remoteConfigsIsReady = true;
                 
-                std::string const configStr = _configurations.dump();
+                std::string const configStr = _gameRemoteConfigsJson.dump();
                 for (auto& listener : _remoteConfigsListeners)
                 {
                     listener->onRemoteConfigsUpdated(configStr);
@@ -1043,6 +1088,12 @@ namespace gameanalytics
             return utilities::GAUtilities::timeIntervalSince1970();
         }
 
+        void GAState::updateTotalSessionTime()
+        {
+            int64_t totalSessionTime = getTotalSessionLength();
+            _gaStore.setState("total_session_time", std::to_string(totalSessionTime));
+        }
+
         std::string GAState::getBuild()
         {
             return getInstance()._build;
@@ -1131,6 +1182,11 @@ namespace gameanalytics
             getInstance().validateAndCleanCustomFields(d, cleanedFields);
 
             return cleanedFields;
+        }
+
+        json GAState::getRemoteConfigAnnotations()
+        {
+            return _trackingRemoteConfigsJson;
         }
     }
 }

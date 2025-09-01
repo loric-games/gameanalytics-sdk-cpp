@@ -134,7 +134,6 @@ namespace gameanalytics
                 static void setEnabledEventSubmission(bool flag);
                 static bool isEventSubmissionEnabled();
                 static bool sessionIsStarted();
-                static std::string getRemoteConfigsStringValue(std::string const& key, std::string const& defaultValue);
                 static bool isRemoteConfigsReady();
                 static void addRemoteConfigsListener(const std::shared_ptr<IRemoteConfigsListener>& listener);
                 static void removeRemoteConfigsListener(const std::shared_ptr<IRemoteConfigsListener>& listener);
@@ -147,7 +146,32 @@ namespace gameanalytics
                 static json getValidatedCustomFields();
                 static json getValidatedCustomFields(const json& withEventFields);
 
-                int64_t calculateSessionLength() const;
+                template<typename T>
+                inline static T getRemoteConfigsValue(std::string const& key, T const& defaultValue)
+                {
+                    std::lock_guard<std::recursive_mutex> lg(getInstance()._mtx);
+                    if(getInstance()._gameRemoteConfigsJson.contains(key))
+                    {
+                        json& config = getInstance()._gameRemoteConfigsJson[key];
+                        T value = utilities::getOptionalValue<T>(config, "value", defaultValue);
+                        return value;
+                    }
+                    
+                    return defaultValue;
+                }
+
+                template<typename T = std::chrono::milliseconds>
+                inline int64_t calculateSessionLength() const
+                {
+                    auto len = std::chrono::high_resolution_clock::now() - _startTimepoint;
+                    return std::chrono::duration_cast<T>(len).count();
+                }
+
+                int64_t getTotalSessionLength() const;
+
+                void populateConfigurations(json& sdkConfig);
+
+                json getRemoteConfigAnnotations();
 
         private:
             
@@ -174,8 +198,9 @@ namespace gameanalytics
             void  validateAndFixCurrentDimensions();
             std::string getBuild();
 
-            int64_t  calculateServerTimeOffset(int64_t serverTs);
-            void     populateConfigurations(json& sdkConfig);
+            void updateTotalSessionTime();
+
+            int64_t calculateServerTimeOffset(int64_t serverTs);
 
             void validateAndCleanCustomFields(const json& fields, json& out);
 
@@ -185,6 +210,8 @@ namespace gameanalytics
 
             void addErrorEvent(EGAErrorSeverity severity, std::string const& message);
 
+            void buildRemoteConfigsJsons(const json& remoteCfgs);
+            
             threading::GAThreading  _gaThread;
             events::GAEvents        _gaEvents;
             device::GADevice        _gaDevice;
@@ -192,7 +219,7 @@ namespace gameanalytics
             store::GAStore          _gaStore;
             http::GAHTTPApi         _gaHttp;
 
-            std::string _userId;
+            std::string _customUserId;
             std::string _identifier;
 
             bool _initialized = false;
@@ -202,6 +229,7 @@ namespace gameanalytics
             int64_t _sessionNum = 0;
             int64_t _transactionNum = 0;
 
+            int64_t _totalElapsedSessionTime = 0;
             std::chrono::high_resolution_clock::time_point _startTimepoint;
 
             std::string _sessionId;
@@ -245,7 +273,9 @@ namespace gameanalytics
 
             bool _enableIdTracking = true;
             
-            json _configurations;
+            json _gameRemoteConfigsJson;
+            json _trackingRemoteConfigsJson;
+            
             bool _remoteConfigsIsReady;
             std::vector<std::shared_ptr<IRemoteConfigsListener>> _remoteConfigsListeners;
             std::recursive_mutex _mtx;

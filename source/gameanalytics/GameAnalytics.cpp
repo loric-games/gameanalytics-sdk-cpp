@@ -740,7 +740,18 @@ namespace gameanalytics
 
     std::string GameAnalytics::getRemoteConfigsValueAsString(std::string const& key, std::string const& defaultValue)
     {
-        return state::GAState::getRemoteConfigsStringValue(key, defaultValue);
+        return state::GAState::getRemoteConfigsValue<std::string>(key, defaultValue);
+    }
+
+    std::string GameAnalytics::getRemoteConfigsValueAsJson(std::string const& key)
+    {
+        std::string jsonString = getRemoteConfigsValueAsString(key);
+        if(!json::accept(jsonString))
+        {
+            return "";
+        }
+
+        return jsonString;
     }
 
     bool GameAnalytics::isRemoteConfigsReady()
@@ -874,26 +885,15 @@ namespace gameanalytics
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         }
-        catch (const std::exception&)
+        catch (const std::exception& e)
         {
+            logging::GALogger::e(e.what());
         }
     }
 
     bool GameAnalytics::isThreadEnding()
     {
         return _endThread || threading::GAThreading::isThreadFinished();
-    }
-
-    // --------------PRIVATE HELPERS -------------- //
-
-    bool GameAnalytics::isSdkReady(bool needsInitialized)
-    {
-        return isSdkReady(needsInitialized, true);
-    }
-
-    bool GameAnalytics::isSdkReady(bool needsInitialized, bool warn)
-    {
-        return isSdkReady(needsInitialized, warn, "");
     }
 
     bool GameAnalytics::isSdkReady(bool needsInitialized, bool warn, std::string const& message)
@@ -906,7 +906,7 @@ namespace gameanalytics
         {
             if (warn)
             {
-                logging::GALogger::w("%sDatastore not initialized", m.c_str());
+                logging::GALogger::w("%s; Datastore not initialized", m.c_str());
             }
             return false;
         }
@@ -915,7 +915,7 @@ namespace gameanalytics
         {
             if (warn)
             {
-                logging::GALogger::w("%sSDK is not initialized", m.c_str());
+                logging::GALogger::w("%s; SDK is not initialized", m.c_str());
             }
             return false;
         }
@@ -924,7 +924,7 @@ namespace gameanalytics
         {
             if (warn)
             {
-                logging::GALogger::w("%s;SDK is disabled", m.c_str());
+                logging::GALogger::w("%s; SDK is disabled", m.c_str());
             }
             return false;
         }
@@ -934,7 +934,7 @@ namespace gameanalytics
         {
             if (warn)
             {
-                logging::GALogger::w("%s;Session has not started yet", m.c_str());
+                logging::GALogger::w("%s; Session has not started yet", m.c_str());
             }
             return false;
         }
@@ -986,6 +986,16 @@ namespace gameanalytics
         {
             healthTracker->enableHardwareTracking = value;
         }
+    }
+
+    int64_t GameAnalytics::getElapsedTimeFromAllSessions()
+    {
+        return state::GAState::getInstance().getTotalSessionLength();
+    }
+
+    int64_t GameAnalytics::getElapsedSessionTime()
+    {
+        return state::GAState::getInstance().calculateSessionLength<std::chrono::seconds>();
     }
 
 } // namespace gameanalytics

@@ -24,10 +24,9 @@ namespace gameanalytics
     void GAHealth::doFpsReading(float fps)
     {
         int fpsBucket = std::round(fps);
-        if(fpsBucket >= 0 && fpsBucket < MAX_FPS_COUNT)
-        {
-            _fpsReadings[fpsBucket]++;
-        }
+        fpsBucket = std::clamp(fpsBucket, 0, MAX_FPS_VALUE);
+
+        _fpsReadings[fpsBucket]++;
     }
 
     int GAHealth::getMemoryPercent(int64_t memory)
@@ -65,6 +64,7 @@ namespace gameanalytics
         {
             utilities::addIfNotEmpty(out, "cpu_model", _cpuModel);
             utilities::addIfNotEmpty(out, "hardware",  _hardware);
+            utilities::addIfNotEmpty(out, "gpu_model", _gpuModel);
             
             if(_numCores > 0)
             {
@@ -169,7 +169,6 @@ namespace gameanalytics
                     }
                 }
             );
-
         }
     }
 }

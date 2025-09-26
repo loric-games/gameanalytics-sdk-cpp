@@ -1,8 +1,16 @@
 #!lua
+include "conan_crossguid.premake5.lua"
+include "conan_cryptopp.premake5.lua"
+include "conan_libcurl.premake5.lua"
+include "conan_openssl.premake5.lua"
+include "conan_zlib.premake5.lua"
+include "conan_sqlite3.premake5.lua"
 
 function conan_setup_build(conf, pkg)
     if conf == nil then
-
+        filter { "configurations:release", "architecture:x86_64" }
+            conan_setup_build("release_x86_64")
+        filter {}
     elseif pkg == nil then
         for k,v in pairs(conandeps[conf]) do
             conan_setup_build(conf, k)
@@ -19,7 +27,9 @@ end
 
 function conan_setup_link(conf, pkg)
     if conf == nil then
-
+        filter { "configurations:release", "architecture:x86_64" }
+            conan_setup_link("release_x86_64")
+        filter {}
     elseif pkg == nil then
         for k,v in pairs(conandeps[conf]) do
             conan_setup_link(conf, k)

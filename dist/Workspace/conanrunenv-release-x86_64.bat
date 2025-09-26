@@ -3,7 +3,7 @@ chcp 65001 > nul
 setlocal
 echo @echo off > "%~dp0/deactivate_conanrunenv-release-x86_64.bat"
 echo echo Restoring environment >> "%~dp0/deactivate_conanrunenv-release-x86_64.bat"
-for %%v in () do (
+for %%v in (OPENSSL_MODULES) do (
     set foundenvvar=
     for /f "delims== tokens=1,2" %%a in ('set') do (
         if /I "%%a" == "%%v" (
@@ -17,3 +17,5 @@ for %%v in () do (
 )
 endlocal
 
+
+set "OPENSSL_MODULES=C:\Users\phocu\.conan2\p\b\opens56015e7f7a13b\p\lib\ossl-modules"

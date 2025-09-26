@@ -39,8 +39,9 @@ class loreRecipe(ConanFile):
         self.cpp_info.libs = ["ga-sdk-cpp"]
 
     def requirements(self):
-         self.requires( "crossguid/0.2.2" )
-         self.requires( "cryptopp/8.9.0" )
-         self.requires( "libcurl/8.2.1" )
-         self.requires( "openssl/3.2.1" )
-         self.requires( "sqlite3/3.47.1" )
+        self.requires("crossguid/0.2.2", options={"shared": False})
+        self.requires("cryptopp/8.9.0",  options={"shared": False})
+        self.requires("libcurl/8.2.1",   options={"shared": False, "with_ssl": "openssl"})
+        self.requires("openssl/3.2.1",   options={"shared": False})
+        self.requires("sqlite3/3.47.1",  options={"shared": False})
+   

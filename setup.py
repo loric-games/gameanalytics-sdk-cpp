@@ -3,71 +3,97 @@ import os
 import subprocess
 import shutil
 import glob
+import sys
 
 def run_command(command, shell=True, cwd=None):
-	if os.name == 'nt':  # Check if the OS is Windows
-		command = f'powershell.exe -Command "{command}"'
-  
-	result = subprocess.run(command, shell=shell, check=True, text=True, cwd=cwd)
-	return result
+    print(f"\n>>> {command}\n")
+    if os.name == 'nt':  # Windows: run via PowerShell for consistent quoting
+        command = f'powershell.exe -Command "{command}"'
+    result = subprocess.run(command, shell=shell, check=False, text=True, cwd=cwd)
+    if result.returncode != 0:
+        sys.exit(result.returncode)
+    return result
 
 def main():
-	parser = argparse.ArgumentParser(description="CMake Build and Test Script")
-	parser.add_argument('--platform', required=True, choices=['linux_x64', 'linux_x86', 'osx', 'win32', 'win64', 'uwp'], help='Platform to build for')
-	parser.add_argument('--cfg', default='Debug', choices=['Release', 'Debug'], help='Configuration Type')
-	parser.add_argument('--build', action='store_true', help='Execute the build step')
-	parser.add_argument('--test', action='store_true', help='Execute the test step')
-	parser.add_argument('--coverage', action='store_true', help='Generate code coverage report')
- 
-	args = parser.parse_args()
+    parser = argparse.ArgumentParser(description="CMake Build and Test Script")
+    parser.add_argument('--platform', required=True,
+                        choices=['linux_x64', 'linux_x86', 'osx', 'win32', 'win64', 'uwp'],
+                        help='Platform to build for')
+    parser.add_argument('--cfg', default='Debug', choices=['Release', 'Debug'],
+                        help='Configuration Type')
+    parser.add_argument('--build', action='store_true', help='Execute the build step')
+    parser.add_argument('--test', action='store_true', help='Execute the test step')
+    parser.add_argument('--coverage', action='store_true', help='Generate code coverage report')
+    # new, minimal knobs:
+    parser.add_argument('--extra-cmake', default='',
+                        help='Extra cmake flags, e.g. "-DGA_SHARED_LIB=OFF -DGA_BUILD_SAMPLE=OFF"')
+    parser.add_argument('--build-target', default='',
+                        help='Optional: only build this CMake target (e.g., GameAnalytics)')
+    parser.add_argument('--clean', action='store_true',
+                        help='Delete build/ before configuring')
 
-	build_output_dir = os.path.join(os.getcwd(), 'build')
-	os.makedirs(build_output_dir, exist_ok=True)
+    args = parser.parse_args()
 
-	# Configure
-	cmake_command = f'cmake -B {build_output_dir} -S {os.getcwd()}'
-	if args.platform == 'osx':
-		cmake_command += ' -G "Xcode"'
-	if args.platform:
-		cmake_command += f' -DPLATFORM:STRING={args.platform}'
-	if args.coverage:
-		cmake_command += ' -DENABLE_COVERAGE=ON'
-  
-	run_command(cmake_command)
+    build_output_dir = os.path.join(os.getcwd(), 'build')
+    if args.clean and os.path.isdir(build_output_dir):
+        shutil.rmtree(build_output_dir)
+    os.makedirs(build_output_dir, exist_ok=True)
 
-	# Build
-	if args.build:
-		run_command(f'cmake --build {build_output_dir} --config {args.cfg}')
-	else:
-		exit(0)
+    # ---------------- Configure ----------------
+    cmake_command = f'cmake -B "{build_output_dir}" -S "{os.getcwd()}"'
+    if args.platform == 'osx':
+        cmake_command += ' -G "Xcode"'
+    if args.platform:
+        cmake_command += f' -DPLATFORM:STRING={args.platform}'
+    if args.coverage:
+        cmake_command += ' -DENABLE_COVERAGE=ON'
+    if args.extra_cmake:
+        cmake_command += f' {args.extra_cmake.strip()}'
 
-	# Test
-	if args.test:
-		run_command(f'ctest --build-config {args.cfg} --verbose --output-on-failure', cwd=build_output_dir)
-	else:
-		exit(0)
+    run_command(cmake_command)
 
-	# Code Coverage
-	if args.coverage:
-		# Prepare coverage data
-		run_command(f'cmake --build {build_output_dir} --target cov', cwd=build_output_dir)
+    # ---------------- Build ----------------
+    if args.build:
+        build_cmd = f'cmake --build "{build_output_dir}" --config {args.cfg}'
+        if args.build_target:
+            build_cmd += f' --target {args.build_target}'
+        run_command(build_cmd)
+    else:
+        sys.exit(0)
 
-	# Package Build Artifacts
-	package_dir = os.path.join(build_output_dir, 'package')
-	os.makedirs(package_dir, exist_ok=True)
-	files_to_copy = glob.glob(f'{build_output_dir}/{args.cfg}/*GameAnalytics.*')
-	for file in files_to_copy:
-		shutil.copy(file, package_dir)
-	shutil.copytree(os.path.join(os.getcwd(), 'include'), os.path.join(package_dir, 'include'), dirs_exist_ok=True)
+    # ---------------- Test ----------------
+    if args.test:
+        run_command(f'ctest --build-config {args.cfg} --verbose --output-on-failure',
+                    cwd=build_output_dir)
+    else:
+        # No tests requested
+        pass
 
-	# Print Package Contents
-	if args.platform.startswith('win'):
-		run_command(f'dir {package_dir}', shell=True)
-	else:
-		run_command(f'ls -la {package_dir}', shell=True)
+    # ---------------- Coverage (optional) ----------------
+    if args.coverage:
+        run_command(f'cmake --build "{build_output_dir}" --target cov --config {args.cfg}',
+                    cwd=build_output_dir)
 
-	if args.platform == 'osx':
-		run_command(f'lipo -info {package_dir}/*GameAnalytics.*')
+    # ---------------- Package Build Artifacts ----------------
+    package_dir = os.path.join(build_output_dir, 'package')
+    os.makedirs(package_dir, exist_ok=True)
+
+    files_to_copy = glob.glob(os.path.join(build_output_dir, args.cfg, '*GameAnalytics.*'))
+    for file in files_to_copy:
+        shutil.copy(file, package_dir)
+
+    include_src = os.path.join(os.getcwd(), 'include')
+    if os.path.isdir(include_src):
+        shutil.copytree(include_src, os.path.join(package_dir, 'include'), dirs_exist_ok=True)
+
+    # Print Package Contents
+    if os.name == 'nt':
+        run_command(f'dir "{package_dir}"', shell=True)
+    else:
+        run_command(f'ls -la "{package_dir}"', shell=True)
+
+    if args.platform == 'osx':
+        run_command(f'lipo -info {package_dir}/*GameAnalytics.*')
 
 if __name__ == "__main__":
-	main()
+    main()

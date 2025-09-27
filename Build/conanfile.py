@@ -3,9 +3,9 @@ from conan import ConanFile
 from conan.tools.files import copy
 
 class loreRecipe(ConanFile):
-    settings = "os", "build_type", "arch"
+    settings = "os", "arch", "compiler", "build_type"
     name = "ga-cpp-sdk"
-    version = "v5.0.0"
+    version = "5.0.0"
     generators = "PremakeDeps"
 
     def _get_os_dir(self):
@@ -27,7 +27,8 @@ class loreRecipe(ConanFile):
         self.cpp.build.libdirs = [ lib_dir ]
 
     def package(self):
-        local_lib_dir = os.path.join( self.build_folder, "Build", "Release")       
+        cfg = "Release" if str(self.settings.build_type) == "Release" else "Debug"
+        local_lib_dir = os.path.join(self.build_folder, "Build", cfg)
         local_tools_dir = os.path.join( "dist", self._get_os_dir(), str( self.settings.arch ), "Tools" );
         copy( self, "*.h", os.path.join( self.build_folder, "Include" ), os.path.join( self.package_folder, "include" ), keep_path = True )
         copy( self, "*.lib", local_lib_dir, os.path.join( self.package_folder, "lib" ), keep_path = False )
@@ -36,12 +37,12 @@ class loreRecipe(ConanFile):
         copy( self, "*.a", local_lib_dir, os.path.join( self.package_folder, "lib" ), keep_path = False )
 
     def package_info(self):
-        self.cpp_info.libs = ["ga-sdk-cpp"]
+        self.cpp_info.libs = ["GameAnalytics"]
 
     def requirements(self):
         self.requires("crossguid/0.2.2", options={"shared": False})
         self.requires("cryptopp/8.9.0",  options={"shared": False})
         self.requires("libcurl/8.2.1",   options={"shared": False, "with_ssl": "openssl"})
-        self.requires("openssl/3.2.1",   options={"shared": False})
+        self.requires("openssl/3.3.2",   options={"shared": False})
         self.requires("sqlite3/3.47.1",  options={"shared": False})
    

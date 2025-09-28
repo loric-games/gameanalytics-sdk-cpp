@@ -5,95 +5,73 @@ import shutil
 import glob
 import sys
 
-def run_command(command, shell=True, cwd=None):
-    print(f"\n>>> {command}\n")
-    if os.name == 'nt':  # Windows: run via PowerShell for consistent quoting
-        command = f'powershell.exe -Command "{command}"'
-    result = subprocess.run(command, shell=shell, check=False, text=True, cwd=cwd)
-    if result.returncode != 0:
-        sys.exit(result.returncode)
-    return result
+def run(cmd, cwd=None):
+    if os.name == 'nt':
+        cmd = f'powershell.exe -Command "{cmd}"'
+    print(f"\n>>> {cmd}\n")
+    r = subprocess.run(cmd, shell=True, cwd=cwd)
+    if r.returncode != 0:
+        sys.exit(r.returncode)
 
 def main():
-    parser = argparse.ArgumentParser(description="CMake Build and Test Script")
-    parser.add_argument('--platform', required=True,
-                        choices=['linux_x64', 'linux_x86', 'osx', 'win32', 'win64', 'uwp'],
-                        help='Platform to build for')
-    parser.add_argument('--cfg', default='Debug', choices=['Release', 'Debug'],
-                        help='Configuration Type')
-    parser.add_argument('--build', action='store_true', help='Execute the build step')
-    parser.add_argument('--test', action='store_true', help='Execute the test step')
-    parser.add_argument('--coverage', action='store_true', help='Generate code coverage report')
-    # new, minimal knobs:
-    parser.add_argument('--extra-cmake', default='',
-                        help='Extra cmake flags, e.g. "-DGA_SHARED_LIB=OFF -DGA_BUILD_SAMPLE=OFF"')
-    parser.add_argument('--build-target', default='',
-                        help='Optional: only build this CMake target (e.g., GameAnalytics)')
-    parser.add_argument('--clean', action='store_true',
-                        help='Delete build/ before configuring')
+    p = argparse.ArgumentParser(description="Minimal GA CMake build")
+    p.add_argument('--platform', required=True,
+                   choices=['linux_x64','linux_x86','osx','win32','win64','uwp'])
+    p.add_argument('--cfg', default='Debug', choices=['Release','Debug'])
+    p.add_argument('--build', action='store_true')
+    p.add_argument('--test', action='store_true')
+    p.add_argument('--coverage', action='store_true')
+    args = p.parse_args()
 
-    args = parser.parse_args()
+    build_dir = os.path.join(os.getcwd(), 'Build')
+    os.makedirs(build_dir, exist_ok=True)
 
-    build_output_dir = os.path.join(os.getcwd(), 'build')
-    if args.clean and os.path.isdir(build_output_dir):
-        shutil.rmtree(build_output_dir)
-    os.makedirs(build_output_dir, exist_ok=True)
-
-    # ---------------- Configure ----------------
-    cmake_command = f'cmake -B "{build_output_dir}" -S "{os.getcwd()}"'
+    # Configure
+    cmake = [
+        'cmake',
+        f'-B "{build_dir}"',
+        f'-S "{os.getcwd()}"',
+        f'-DPLATFORM:STRING={args.platform}',
+        '-DGA_SHARED_LIB=OFF',
+        '-DGA_BUILD_SAMPLE=OFF'
+    ]
     if args.platform == 'osx':
-        cmake_command += ' -G "Xcode"'
-    if args.platform:
-        cmake_command += f' -DPLATFORM:STRING={args.platform}'
+        cmake.append('-G "Xcode"')
     if args.coverage:
-        cmake_command += ' -DENABLE_COVERAGE=ON'
-    if args.extra_cmake:
-        cmake_command += f' {args.extra_cmake.strip()}'
+        cmake.append('-DENABLE_COVERAGE=ON')
 
-    run_command(cmake_command)
+    run(' '.join(cmake))
 
-    # ---------------- Build ----------------
+    # Build
     if args.build:
-        build_cmd = f'cmake --build "{build_output_dir}" --config {args.cfg}'
-        if args.build_target:
-            build_cmd += f' --target {args.build_target}'
-        run_command(build_cmd)
+        run(f'cmake --build "{build_dir}" --config {args.cfg}')
     else:
         sys.exit(0)
 
-    # ---------------- Test ----------------
+    # (Optional) tests / coverage – unchanged from original
     if args.test:
-        run_command(f'ctest --build-config {args.cfg} --verbose --output-on-failure',
-                    cwd=build_output_dir)
-    else:
-        # No tests requested
-        pass
-
-    # ---------------- Coverage (optional) ----------------
+        run(f'ctest --build-config {args.cfg} --verbose --output-on-failure', cwd=build_dir)
     if args.coverage:
-        run_command(f'cmake --build "{build_output_dir}" --target cov --config {args.cfg}',
-                    cwd=build_output_dir)
+        run(f'cmake --build "{build_dir}" --target cov', cwd=build_dir)
 
-    # ---------------- Package Build Artifacts ----------------
-    package_dir = os.path.join(build_output_dir, 'package')
-    os.makedirs(package_dir, exist_ok=True)
+    # Package: copy lib + headers into Build/package
+    pkg = os.path.join(build_dir, 'package')
+    os.makedirs(pkg, exist_ok=True)
 
-    files_to_copy = glob.glob(os.path.join(build_output_dir, args.cfg, '*GameAnalytics.*'))
-    for file in files_to_copy:
-        shutil.copy(file, package_dir)
+    for f in glob.glob(os.path.join(build_dir, args.cfg, '*GameAnalytics.*')):
+        shutil.copy(f, pkg)
 
-    include_src = os.path.join(os.getcwd(), 'include')
-    if os.path.isdir(include_src):
-        shutil.copytree(include_src, os.path.join(package_dir, 'include'), dirs_exist_ok=True)
+    inc_src = os.path.join(os.getcwd(), 'include')
+    if os.path.isdir(inc_src):
+        shutil.copytree(inc_src, os.path.join(pkg, 'include'), dirs_exist_ok=True)
 
-    # Print Package Contents
+    # List package contents
     if os.name == 'nt':
-        run_command(f'dir "{package_dir}"', shell=True)
+        run(f'dir "{pkg}"')
     else:
-        run_command(f'ls -la "{package_dir}"', shell=True)
-
+        run(f'ls -la "{pkg}"')
     if args.platform == 'osx':
-        run_command(f'lipo -info {package_dir}/*GameAnalytics.*')
+        run(f'lipo -info {pkg}/*GameAnalytics.*')
 
 if __name__ == "__main__":
     main()

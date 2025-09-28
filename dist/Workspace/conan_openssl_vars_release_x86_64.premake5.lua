@@ -5,11 +5,11 @@ include "conanutils.premake5.lua"
 t_conandeps = {}
 t_conandeps["release_x86_64"] = {}
 t_conandeps["release_x86_64"]["openssl"] = {}
-t_conandeps["release_x86_64"]["openssl"]["includedirs"] = {"C:/Users/phocu/.conan2/p/opens45d6327665a2f/p/include"}
-t_conandeps["release_x86_64"]["openssl"]["libdirs"] = {"C:/Users/phocu/.conan2/p/opens45d6327665a2f/p/lib"}
-t_conandeps["release_x86_64"]["openssl"]["bindirs"] = {"C:/Users/phocu/.conan2/p/opens45d6327665a2f/p/bin"}
-t_conandeps["release_x86_64"]["openssl"]["libs"] = {"libssl", "libcrypto"}
-t_conandeps["release_x86_64"]["openssl"]["system_libs"] = {"crypt32", "ws2_32", "advapi32", "user32", "bcrypt"}
+t_conandeps["release_x86_64"]["openssl"]["includedirs"] = {"/home/focus/.conan2/p/opens5e24f8e908f3a/p/include"}
+t_conandeps["release_x86_64"]["openssl"]["libdirs"] = {"/home/focus/.conan2/p/opens5e24f8e908f3a/p/lib"}
+t_conandeps["release_x86_64"]["openssl"]["bindirs"] = {"/home/focus/.conan2/p/opens5e24f8e908f3a/p/bin"}
+t_conandeps["release_x86_64"]["openssl"]["libs"] = {"ssl", "crypto"}
+t_conandeps["release_x86_64"]["openssl"]["system_libs"] = {"dl", "pthread", "rt"}
 t_conandeps["release_x86_64"]["openssl"]["defines"] = {}
 t_conandeps["release_x86_64"]["openssl"]["cxxflags"] = {}
 t_conandeps["release_x86_64"]["openssl"]["cflags"] = {}

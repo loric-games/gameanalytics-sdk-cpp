@@ -5,11 +5,11 @@ include "conanutils.premake5.lua"
 t_conandeps = {}
 t_conandeps["release_x86_64"] = {}
 t_conandeps["release_x86_64"]["sqlite3"] = {}
-t_conandeps["release_x86_64"]["sqlite3"]["includedirs"] = {"C:/Users/phocu/.conan2/p/sqlit84d5d0793be5b/p/include"}
-t_conandeps["release_x86_64"]["sqlite3"]["libdirs"] = {"C:/Users/phocu/.conan2/p/sqlit84d5d0793be5b/p/lib"}
-t_conandeps["release_x86_64"]["sqlite3"]["bindirs"] = {"C:/Users/phocu/.conan2/p/sqlit84d5d0793be5b/p/bin"}
+t_conandeps["release_x86_64"]["sqlite3"]["includedirs"] = {"/home/focus/.conan2/p/b/sqlite6c5df00feb34/p/include"}
+t_conandeps["release_x86_64"]["sqlite3"]["libdirs"] = {"/home/focus/.conan2/p/b/sqlite6c5df00feb34/p/lib"}
+t_conandeps["release_x86_64"]["sqlite3"]["bindirs"] = {"/home/focus/.conan2/p/b/sqlite6c5df00feb34/p/bin"}
 t_conandeps["release_x86_64"]["sqlite3"]["libs"] = {"sqlite3"}
-t_conandeps["release_x86_64"]["sqlite3"]["system_libs"] = {}
+t_conandeps["release_x86_64"]["sqlite3"]["system_libs"] = {"pthread", "dl", "m"}
 t_conandeps["release_x86_64"]["sqlite3"]["defines"] = {}
 t_conandeps["release_x86_64"]["sqlite3"]["cxxflags"] = {}
 t_conandeps["release_x86_64"]["sqlite3"]["cflags"] = {}

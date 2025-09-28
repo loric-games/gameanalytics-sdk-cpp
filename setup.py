@@ -34,7 +34,7 @@ def main():
 
     args = parser.parse_args()
 
-    build_output_dir = os.path.join(os.getcwd(), 'build')
+    build_output_dir = os.path.join(os.getcwd(), 'Build',args.cfg)
     os.makedirs(build_output_dir, exist_ok=True)
 
     cmake_command = f'cmake -B "{build_output_dir}" -S "{os.getcwd()}"'

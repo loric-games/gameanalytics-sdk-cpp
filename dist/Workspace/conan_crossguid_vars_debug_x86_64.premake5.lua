@@ -5,11 +5,11 @@ include "conanutils.premake5.lua"
 t_conandeps = {}
 t_conandeps["debug_x86_64"] = {}
 t_conandeps["debug_x86_64"]["crossguid"] = {}
-t_conandeps["debug_x86_64"]["crossguid"]["includedirs"] = {"C:/Users/phocu/.conan2/p/cross62b9af9784adc/p/include"}
-t_conandeps["debug_x86_64"]["crossguid"]["libdirs"] = {"C:/Users/phocu/.conan2/p/cross62b9af9784adc/p/lib"}
-t_conandeps["debug_x86_64"]["crossguid"]["bindirs"] = {"C:/Users/phocu/.conan2/p/cross62b9af9784adc/p/bin"}
+t_conandeps["debug_x86_64"]["crossguid"]["includedirs"] = {"/home/focus/.conan2/p/b/crossf49f7d5cd2f20/p/include"}
+t_conandeps["debug_x86_64"]["crossguid"]["libdirs"] = {"/home/focus/.conan2/p/b/crossf49f7d5cd2f20/p/lib"}
+t_conandeps["debug_x86_64"]["crossguid"]["bindirs"] = {"/home/focus/.conan2/p/b/crossf49f7d5cd2f20/p/bin"}
 t_conandeps["debug_x86_64"]["crossguid"]["libs"] = {"xg"}
-t_conandeps["debug_x86_64"]["crossguid"]["system_libs"] = {}
+t_conandeps["debug_x86_64"]["crossguid"]["system_libs"] = {"m"}
 t_conandeps["debug_x86_64"]["crossguid"]["defines"] = {}
 t_conandeps["debug_x86_64"]["crossguid"]["cxxflags"] = {}
 t_conandeps["debug_x86_64"]["crossguid"]["cflags"] = {}

@@ -5,11 +5,11 @@ include "conanutils.premake5.lua"
 t_conandeps = {}
 t_conandeps["release_x86_64"] = {}
 t_conandeps["release_x86_64"]["libcurl"] = {}
-t_conandeps["release_x86_64"]["libcurl"]["includedirs"] = {"C:/Users/phocu/.conan2/p/libcu5dd135ae74c87/p/include"}
-t_conandeps["release_x86_64"]["libcurl"]["libdirs"] = {"C:/Users/phocu/.conan2/p/libcu5dd135ae74c87/p/lib"}
-t_conandeps["release_x86_64"]["libcurl"]["bindirs"] = {"C:/Users/phocu/.conan2/p/libcu5dd135ae74c87/p/bin"}
-t_conandeps["release_x86_64"]["libcurl"]["libs"] = {"libcurl"}
-t_conandeps["release_x86_64"]["libcurl"]["system_libs"] = {"ws2_32"}
+t_conandeps["release_x86_64"]["libcurl"]["includedirs"] = {"/home/focus/.conan2/p/libcu4e4fc5c209f3f/p/include"}
+t_conandeps["release_x86_64"]["libcurl"]["libdirs"] = {"/home/focus/.conan2/p/libcu4e4fc5c209f3f/p/lib"}
+t_conandeps["release_x86_64"]["libcurl"]["bindirs"] = {"/home/focus/.conan2/p/libcu4e4fc5c209f3f/p/bin"}
+t_conandeps["release_x86_64"]["libcurl"]["libs"] = {"curl"}
+t_conandeps["release_x86_64"]["libcurl"]["system_libs"] = {"rt", "pthread"}
 t_conandeps["release_x86_64"]["libcurl"]["defines"] = {"CURL_STATICLIB=1"}
 t_conandeps["release_x86_64"]["libcurl"]["cxxflags"] = {}
 t_conandeps["release_x86_64"]["libcurl"]["cflags"] = {}

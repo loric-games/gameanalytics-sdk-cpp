@@ -5,10 +5,10 @@ include "conanutils.premake5.lua"
 t_conandeps = {}
 t_conandeps["debug_x86_64"] = {}
 t_conandeps["debug_x86_64"]["zlib"] = {}
-t_conandeps["debug_x86_64"]["zlib"]["includedirs"] = {"C:/Users/phocu/.conan2/p/zlib76155f3c7c431/p/include"}
-t_conandeps["debug_x86_64"]["zlib"]["libdirs"] = {"C:/Users/phocu/.conan2/p/zlib76155f3c7c431/p/lib"}
-t_conandeps["debug_x86_64"]["zlib"]["bindirs"] = {"C:/Users/phocu/.conan2/p/zlib76155f3c7c431/p/bin"}
-t_conandeps["debug_x86_64"]["zlib"]["libs"] = {"zlib"}
+t_conandeps["debug_x86_64"]["zlib"]["includedirs"] = {"/home/focus/.conan2/p/zlib7e0807a312cfa/p/include"}
+t_conandeps["debug_x86_64"]["zlib"]["libdirs"] = {"/home/focus/.conan2/p/zlib7e0807a312cfa/p/lib"}
+t_conandeps["debug_x86_64"]["zlib"]["bindirs"] = {"/home/focus/.conan2/p/zlib7e0807a312cfa/p/bin"}
+t_conandeps["debug_x86_64"]["zlib"]["libs"] = {"z"}
 t_conandeps["debug_x86_64"]["zlib"]["system_libs"] = {}
 t_conandeps["debug_x86_64"]["zlib"]["defines"] = {}
 t_conandeps["debug_x86_64"]["zlib"]["cxxflags"] = {}

@@ -18,4 +18,4 @@ for %%v in (OPENSSL_MODULES) do (
 endlocal
 
 
-set "OPENSSL_MODULES=C:\Users\phocu\.conan2\p\b\opens56015e7f7a13b\p\lib\ossl-modules"
+set "OPENSSL_MODULES=C:\Users\phocu\.conan2\p\opens45d6327665a2f\p\lib\ossl-modules"

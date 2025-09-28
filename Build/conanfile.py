@@ -30,7 +30,7 @@ class loreRecipe(ConanFile):
         cfg = "Release" if str(self.settings.build_type) == "Release" else "Debug"
         local_lib_dir = os.path.join(self.build_folder, "Build", cfg)
         local_tools_dir = os.path.join( "dist", self._get_os_dir(), str( self.settings.arch ), "Tools" );
-        copy( self, "*.h", os.path.join( self.build_folder, "Include" ), os.path.join( self.package_folder, "include" ), keep_path = True )
+        copy( self, "*.h", os.path.join( self.build_folder, "include" ), os.path.join( self.package_folder, "include" ), keep_path = True )
         copy( self, "*.lib", local_lib_dir, os.path.join( self.package_folder, "lib" ), keep_path = False )
         copy( self, "*.dll", local_lib_dir, os.path.join( self.package_folder, "lib" ), keep_path = False )
         copy( self, "*.pdb", local_lib_dir, os.path.join( self.package_folder, "lib" ), keep_path = False )

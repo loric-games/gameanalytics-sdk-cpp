@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.20)
+project(crossguid)
+
+add_library(crossguid STATIC guid.cpp)
+
+if(UNIX AND NOT APPLE)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(UUID REQUIRED uuid)
+    target_link_libraries(crossguid PRIVATE ${UUID_LIBRARIES})
+    target_compile_definitions(crossguid PRIVATE GUID_LIBUUID)
+elseif(WIN32)
+    target_compile_definitions(crossguid PRIVATE GUID_WINDOWS)
+elseif(APPLE)
+    target_compile_definitions(crossguid PRIVATE GUID_CFUUID)
+endif()

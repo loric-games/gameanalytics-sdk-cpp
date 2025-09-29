@@ -22,10 +22,10 @@ option(GA_BUILD_SAMPLE "Builds the GA Sample app" ON)
 option(GA_USE_PACKAGE "Use installed packages for dependencies" OFF)
 
 # set directories
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG	"${CMAKE_BINARY_DIR}/Debug")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE	"${CMAKE_BINARY_DIR}/Release")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG	"${CMAKE_BINARY_DIR}/Debug")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE	"${CMAKE_BINARY_DIR}/Release")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG        "${CMAKE_BINARY_DIR}/Debug")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE      "${CMAKE_BINARY_DIR}/Release")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG        "${CMAKE_BINARY_DIR}/Debug")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE      "${CMAKE_BINARY_DIR}/Release")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
@@ -42,7 +42,6 @@ include_directories(
 
     # depndencies includes
     "${DEPENDENCIES_DIR}"
-    "${DEPENDENCIES_DIR}/crossguid"
     "${DEPENDENCIES_DIR}/nlohmann"
     "${DEPENDENCIES_DIR}/stacktrace"
     "${DEPENDENCIES_DIR}/zf_log"
@@ -53,6 +52,9 @@ include_directories(
     "${EXTERNALS_DIR}/openssl/include"
 )
 
+# --- Define the crossguid sub-project ---
+add_subdirectory(${DEPENDENCIES_DIR}/crossguid)
+
 FILE(GLOB_RECURSE CPP_SOURCES
     # Add GameAnalytics Sources
     "${GA_SOURCE_DIR}/gameanalytics/*.h"
@@ -62,7 +64,6 @@ FILE(GLOB_RECURSE CPP_SOURCES
     "${INCLUDE_DIR}/*.cpp"
 
     # Add dependencies
-    "${DEPENDENCIES_DIR}/crossguid/*"
     "${DEPENDENCIES_DIR}/nlohmann/*"
     "${DEPENDENCIES_DIR}/stacktrace/*"
     "${DEPENDENCIES_DIR}/zf_log/*"
@@ -167,7 +168,7 @@ else()
 endif()
 
 if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGUID_WINDOWS")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # GUID_WINDOWS is now handled in crossguid's CMakeLists
     if(${GA_SHARED_LIB})
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
@@ -182,7 +183,7 @@ if(WIN32)
 
 elseif(APPLE)
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGUID_CFUUID")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # GUID_CFUUID is now handled in crossguid's CMakeLists
     FILE(GLOB_RECURSE MACOS_SOURCES "${GA_SOURCE_DIR}/gameanalytics/Platform/*.mm")
     list(APPEND CPP_SOURCES ${MACOS_SOURCES})
     set(PUBLIC_LIBS
@@ -195,13 +196,13 @@ elseif(APPLE)
     create_source_groups(MACOS_SOURCES)
 
 elseif(LINUX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGUID_STDLIB -std=c++17")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # GUID_LIBUUID is now handled in crossguid's CMakeLists
 
     if (CMAKE_CXX_COMPILER MATCHES "clang")
         message(STATUS "Detected Clang compiler: ${CMAKE_CXX_COMPILER}")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
-    
+
 endif()
 
 if(${GA_BUILD_SAMPLE})
@@ -209,7 +210,9 @@ if(${GA_BUILD_SAMPLE})
 endif()
 
 add_library(GameAnalytics ${LIB_TYPE} ${CPP_SOURCES})
-target_link_libraries(GameAnalytics PRIVATE ${LIBS} PUBLIC ${PUBLIC_LIBS})
+target_include_directories(GameAnalytics PRIVATE "${DEPENDENCIES_DIR}/crossguid")
+target_link_libraries(GameAnalytics PRIVATE crossguid ${LIBS} PUBLIC ${PUBLIC_LIBS})
+
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 message(STATUS "CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
 message(STATUS "CMAKE_SHARED_LINKER_FLAGS: ${CMAKE_SHARED_LINKER_FLAGS}")
@@ -296,7 +299,7 @@ if (ENABLE_COVERAGE)
             COMMAND ${LCOV_PATH} --directory . --capture --output-file ${covname}.info --branch-coverage --rc geninfo_unexecuted_blocks=1 --rc no_exception_branch=1
 
             COMMAND echo "Removing unwanted files from coverage report."
-            
+
             COMMAND ${LCOV_PATH} --remove ${covname}.info
                                 '${CMAKE_SOURCE_DIR}/source/dependencies/*'
                                 '${CMAKE_SOURCE_DIR}/test/*'
@@ -304,7 +307,7 @@ if (ENABLE_COVERAGE)
                                 '/Applications/Xcode.app/*'
                                 --output-file ${covname}.info.cleaned
                                 --ignore-errors unused
-            
+
             COMMAND echo "Finished processing code coverage counters and generating report."
         )
 
@@ -320,11 +323,11 @@ if (ENABLE_COVERAGE)
                 # Capturing lcov counters and generating report
                 COMMAND ${LCOV_PATH} --directory . --capture --output-file ${covname}.info --rc lcov_branch_coverage=1 --rc derive_function_end_line=0
                 COMMAND ${LCOV_PATH} --remove ${covname}.info
-                                    '${CMAKE_SOURCE_DIR}/source/dependencies/*'
-                                    '/usr/*'
-                                    --output-file ${covname}.info.cleaned
-                                    --rc lcov_branch_coverage=1 
-                                    --rc derive_function_end_line=0
+                                        '${CMAKE_SOURCE_DIR}/source/dependencies/*'
+                                        '/usr/*'
+                                        --output-file ${covname}.info.cleaned
+                                        --rc lcov_branch_coverage=1
+                                        --rc derive_function_end_line=0
                 COMMAND ${GENHTML_PATH} -o ${covname} ${covname}.info.cleaned --rc lcov_branch_coverage=1 --rc derive_function_end_line=0
                 COMMAND ${CMAKE_COMMAND} -E remove ${covname}.info ${covname}.info.cleaned
 

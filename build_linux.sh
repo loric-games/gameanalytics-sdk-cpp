@@ -1,2 +1,2 @@
-python3 setup.py --platform win64 --cfg Debug --build --clean --extra-cmake "-DGA_SHARED_LIB=OFF -DGA_BUILD_SAMPLE=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"   --build-target GameAnalytics
-python3 setup.py --platform win64 --cfg Release --build --clean --extra-cmake "-DGA_SHARED_LIB=OFF -DGA_BUILD_SAMPLE=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"   --build-target GameAnalytics
+python3 setup.py --platform linux_x64 --cfg Debug --build --clean --extra-cmake "-DGA_SHARED_LIB=OFF -DGA_BUILD_SAMPLE=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"   --build-target GameAnalytics
+python3 setup.py --platform linux_x64 --cfg Release --build --clean --extra-cmake "-DGA_SHARED_LIB=OFF -DGA_BUILD_SAMPLE=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"   --build-target GameAnalytics

@@ -8,6 +8,7 @@ class GACppSdk(ConanFile):
     name = "ga-cpp-sdk"
     version = "5.0.0"
 
+
     # Define the directory structure for your pre-built binaries
     def layout(self):
         # The root folder containing your 'lib' and 'include' directories

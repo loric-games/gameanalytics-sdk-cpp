@@ -16,7 +16,6 @@ class GACppSdk(ConanFile):
         # Defines where to find headers
         self.cpp.source.includedirs = ["include"]
         # Defines where to find the libraries based on platform
-        lib_folder = os.path.join("lib", str(self.settings.os), str(self.settings.arch), str(self.settings.build_type))
         lib_folder = os.path.join("Build",str(self.settings.build_type))
         self.cpp.build.libdirs = [lib_folder]
 
